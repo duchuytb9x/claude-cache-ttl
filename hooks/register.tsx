@@ -38,7 +38,7 @@ const FS_READ_MAX = 4 * 1024 * 1024
 const TAIL_BYTES = '4000000'
 // Claude Code cắt tên thư mục project (slug của cwd) ở độ dài này
 const PROJECT_SLUG_MAX = 200
-// Dải phía trên ô prompt hẹp hơn chừng này cột thì thu gọn
+// Dải phía trên ô prompt hẹp hơn chừng này cột thì thanh ngắn lại
 const NARROW_COLUMNS = 90
 
 // Thời điểm gửi request gần nhất của main thread (hoặc đọc từ transcript khi resume); null khi chưa có
@@ -387,7 +387,7 @@ async function drawFooter($: EngineInterface, e: RenderEvent, compact: boolean) 
 
 // Dải phía trên ô prompt, bố cục theo prompt-cache-control (MIT):
 // ● cache ██████████ 100% read 384k wrote 722 new 2 ⏱ 59:38 1h · warm: keep going
-// read/wrote/new gộp trong một Box không co để luôn cùng một hàng; hẹp dưới 90 cột thì thu gọn
+// read/wrote/new gộp trong một Box không co để luôn cùng một hàng và luôn hiện; hẹp dưới 90 cột thì thanh còn 6 ô, thiếu chỗ thì cắt phần lời khuyên cuối dòng
 async function drawBand($: EngineInterface, e: RenderEvent, columns: number) {
   const { Box, Text } = $.ui.resolve(e)
   const s = await snapshot($)
@@ -406,17 +406,13 @@ async function drawBand($: EngineInterface, e: RenderEvent, columns: number) {
       <Text color={color}>{bar(ratio, wide ? 10 : 6)}</Text>
       <Text bold>{`${Math.round(ratio * 100)}%`}</Text>
       <Box flexShrink={0}>
-        {wide ? (
-          <Text wrap="truncate-end">
-            <Text color="green">{`read ${fmtTokens(sample.read)}`}</Text>
-            <Text>{' '}</Text>
-            <Text color={WROTE_COLOR}>{`wrote ${fmtTokens(sample.write)}`}</Text>
-            <Text>{' '}</Text>
-            <Text color="cyan">{`new ${fmtTokens(sample.fresh)}`}</Text>
-          </Text>
-        ) : (
-          <Text dimColor>{`${fmtTokens(promptTokens(sample))} tok`}</Text>
-        )}
+        <Text wrap="truncate-end">
+          <Text color="green">{`read ${fmtTokens(sample.read)}`}</Text>
+          <Text>{' '}</Text>
+          <Text color={WROTE_COLOR}>{`wrote ${fmtTokens(sample.write)}`}</Text>
+          <Text>{' '}</Text>
+          <Text color="cyan">{`new ${fmtTokens(sample.fresh)}`}</Text>
+        </Text>
       </Box>
       {counting(s) ? (
         <Text bold color={lifeColor(s.left, s.ttl, warnMs(s.ttl))}>{s.left > 0 ? `⏱ ${fmtClock(s.left)}` : '⏱ 0:00'}</Text>

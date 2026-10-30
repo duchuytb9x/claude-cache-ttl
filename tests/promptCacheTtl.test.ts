@@ -417,8 +417,12 @@ describe('promptCacheTtl', () => {
     const ui = await band($, { ...BAND, bodyColumns: 70 })
     const all = await texts(ui)
     expect(all).toContain('██████')
-    expect(all).toContain('151k tok')
-    expect(all).not.toContain('read 150k')
+    expect(all).not.toContain('██████████')
+    // Hẹp vẫn hiện đủ read/wrote/new, không gộp
+    expect(await colorOf(ui, 'read 150k')).toBe('green')
+    expect(await colorOf(ui, 'wrote 1k')).toBe('#D97706')
+    expect(await colorOf(ui, 'new 300')).toBe('cyan')
+    expect(all).not.toContain('151k tok')
     await ui.unmount()
   })
 
