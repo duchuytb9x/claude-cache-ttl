@@ -1,0 +1,52 @@
+{
+  "name": "promptCacheTtl",
+  "version": "1.0.6",
+  "description": "Đếm ngược prompt cache: TTL 5m/1h đọc từ transcript, token read/wrote/new, lý do cache miss, toast sắp hết hạn, /cache-ttl xem bảng theo lượt; hiện ở footer và dải phía trên ô prompt",
+  "author": { "name": "huypd" },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "ttl": {
+      "type": "string",
+      "title": "TTL cache",
+      "description": "auto: đọc từ transcript, rồi suy từ nhịp request, rồi theo biến môi trường/setting/tài khoản; 5m hoặc 1h để cố định",
+      "default": "auto",
+      "options": ["auto", "5m", "1h"]
+    },
+    "warnSeconds": {
+      "type": "number",
+      "title": "Cảnh báo trước khi hết hạn (giây)",
+      "description": "Còn chừng này giây thì đồng hồ chuyển màu và toast nhắc; 0 là tự động (300 giây với TTL 1h, 60 giây với TTL 5m)",
+      "default": 0
+    },
+    "compactAtTokens": {
+      "type": "number",
+      "title": "Ngưỡng gợi ý /compact (token)",
+      "description": "Prompt từ cỡ này trở lên mà cache hết hạn thì gợi ý /compact hoặc /clear trước khi ghi lại cả prefix",
+      "default": 100000
+    },
+    "toastMinTokens": {
+      "type": "number",
+      "title": "Ngưỡng toast (token)",
+      "description": "Chỉ toast sắp hết hạn / cache miss khi prompt (hoặc phần ghi lại) từ cỡ này trở lên",
+      "default": 20000
+    },
+    "band": {
+      "type": "boolean",
+      "title": "Dải phía trên ô prompt",
+      "description": "Hiện dòng cache đầy đủ ở dải phía trên ô prompt (desktop)",
+      "default": true
+    },
+    "footer": {
+      "type": "boolean",
+      "title": "Footer dưới ô prompt",
+      "description": "Hiện dòng cache ở footer cạnh model; tắt thì dùng status line text",
+      "default": true
+    },
+    "toast": {
+      "type": "boolean",
+      "title": "Toast",
+      "description": "Toast ở ngưỡng cảnh báo rồi 10, 3, 2, 1 giây cuối; toast khi cache miss và khi compact",
+      "default": true
+    }
+  }
+}

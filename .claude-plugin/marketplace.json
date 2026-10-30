@@ -1,0 +1,5 @@
+{
+  "name": "claude-cache-ttl",
+  "owner": { "name": "huypd" },
+  "plugins": [{ "name": "promptCacheTtl", "source": "./" }]
+}
