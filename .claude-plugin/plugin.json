@@ -1,6 +1,6 @@
 {
   "name": "promptCacheTtl",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Đếm ngược prompt cache: TTL 5m/1h đọc từ transcript, token read/wrote/new, lý do cache miss, toast sắp hết hạn, /cache-ttl xem bảng theo lượt; hiện ở footer và dải phía trên ô prompt",
   "author": { "name": "huypd" },
   "types": "./types/index.d.ts",

@@ -180,6 +180,16 @@ export function bar(ratio: number, cells: number): string {
   return '█'.repeat(full) + '░'.repeat(cells - full)
 }
 
+// Chữ chạy: vừa width thì giữ nguyên; dài hơn thì đứng yên pause bước ở đầu mỗi vòng rồi trượt sang trái, nối vòng bằng " · ".
+// No-break space để HTML không gộp hay cắt khoảng trắng khi chữ trượt
+export function marquee(text: string, width: number, step: number, pause = 0): string {
+  const chars = [...text]
+  if (chars.length <= width) return text
+  const loop = [...chars, ...' · ']
+  const at = Math.max(0, step % (loop.length + pause) - pause)
+  return [...loop, ...loop].slice(at, at + width).join('').replace(/ /g, ' ')
+}
+
 export function fit(text: string, width: number): string {
   return text.length <= width ? text : `${text.slice(0, Math.max(0, width - 1))}…`
 }

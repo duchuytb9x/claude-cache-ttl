@@ -17,6 +17,7 @@ import {
   isCachingDisabled,
   lifeColor,
   lifeRatio,
+  marquee,
   missReason,
   nextToastMark,
   observeTtl,
@@ -40,6 +41,10 @@ const TAIL_BYTES = '4000000'
 const PROJECT_SLUG_MAX = 200
 // Dải phía trên ô prompt hẹp hơn chừng này cột thì thanh ngắn lại
 const NARROW_COLUMNS = 90
+// Chữ chạy ở cuối dải: mỗi bước một ký tự, đứng yên vài bước ở đầu vòng để kịp đọc; luôn chừa ít nhất chừng này cột
+const MARQUEE_MS = 350
+const MARQUEE_PAUSE = 8
+const TAIL_MIN_COLUMNS = 10
 
 // Thời điểm gửi request gần nhất của main thread (hoặc đọc từ transcript khi resume); null khi chưa có
 const lastAt = atom({ plugin: 'promptCacheTtl', key: 'lastAt' } as const, null)
@@ -78,6 +83,9 @@ let shownText: string | undefined
 let footerSeen = false
 let isPaneOpen = false
 let timer: { cancel: () => void } | undefined
+// Dải vừa vẽ có chữ chạy không; có thì vẽ lại theo nhịp MARQUEE_MS
+let isScrolling = false
+let scrollTimer: { cancel: () => void } | undefined
 
 function positive(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback
@@ -203,6 +211,15 @@ function show($: EngineInterface, text: string) {
 
 // Mỗi giây: vẽ lại khi text đổi; toast ở ngưỡng cảnh báo rồi 10, 3, 2, 1 giây cuối, chỉ với prompt đủ lớn
 async function tick($: EngineInterface) {
+  // Timer chữ chạy chỉ sống khi dải đang có chữ chạy
+  if (isScrolling && !scrollTimer) {
+    scrollTimer = $.clock.every(MARQUEE_MS, () => {
+      $.ui.invalidate('ui.render')
+    })
+  } else if (!isScrolling && scrollTimer) {
+    scrollTimer.cancel()
+    scrollTimer = undefined
+  }
   const s = await snapshot($)
   show($, statusLine(s))
   if (!opts.toast || !counting(s) || s.left <= 0 || !s.sample || s.last === null) return
@@ -387,7 +404,7 @@ async function drawFooter($: EngineInterface, e: RenderEvent, compact: boolean) 
 
 // Dải phía trên ô prompt, bố cục theo prompt-cache-control (MIT):
 // ● cache ██████████ 100% read 384k wrote 722 new 2 ⏱ 59:38 1h · warm: keep going
-// read/wrote/new gộp trong một Box không co để luôn cùng một hàng và luôn hiện; hẹp dưới 90 cột thì thanh còn 6 ô, thiếu chỗ thì cắt phần lời khuyên cuối dòng
+// read/wrote/new và đồng hồ nằm trong Box không co để luôn cùng một hàng và luôn hiện; hẹp dưới 90 cột thì thanh còn 6 ô, phần sau đồng hồ dài quá thì thành chữ chạy
 async function drawBand($: EngineInterface, e: RenderEvent, columns: number) {
   const { Box, Text } = $.ui.resolve(e)
   const s = await snapshot($)
@@ -399,12 +416,22 @@ async function drawBand($: EngineInterface, e: RenderEvent, columns: number) {
   const wide = columns >= NARROW_COLUMNS
   const color = KIND_COLOR[s.kind]
   const ratio = hitRatio(sample)
+  const barText = bar(ratio, wide ? 10 : 6)
+  const percent = `${Math.round(ratio * 100)}%`
+  const clock = !counting(s) ? null : s.left > 0 ? `⏱ ${fmtClock(s.left)}` : '⏱ 0:00'
+  const tail = `${s.ttl} · ${s.advice}`
+  const tokens = `read ${fmtTokens(sample.read)} wrote ${fmtTokens(sample.write)} new ${fmtTokens(sample.fresh)}`
+  // Cột còn lại sau đồng hồ: mỗi phần cộng một cột gap, ⏱ rộng 2 ô
+  const used = [KIND_GLYPH[s.kind], 'cache', barText, percent, tokens, ...(clock ? [`${clock} `] : [])].reduce((n, t) => n + [...t].length + 1, 0)
+  const room = Math.max(TAIL_MIN_COLUMNS, columns - used)
+  isScrolling = [...tail].length > room
+  const shown = marquee(tail, room, Math.floor((await $.clock.now()) / MARQUEE_MS), MARQUEE_PAUSE)
   return (
     <Box flexDirection="row" columnGap={1} alignItems="center">
       <Text bold color={color}>{KIND_GLYPH[s.kind]}</Text>
       <Text bold color="cyan">cache</Text>
-      <Text color={color}>{bar(ratio, wide ? 10 : 6)}</Text>
-      <Text bold>{`${Math.round(ratio * 100)}%`}</Text>
+      <Text color={color}>{barText}</Text>
+      <Text bold>{percent}</Text>
       <Box flexShrink={0}>
         <Text wrap="truncate-end">
           <Text color="green">{`read ${fmtTokens(sample.read)}`}</Text>
@@ -414,10 +441,12 @@ async function drawBand($: EngineInterface, e: RenderEvent, columns: number) {
           <Text color="cyan">{`new ${fmtTokens(sample.fresh)}`}</Text>
         </Text>
       </Box>
-      {counting(s) ? (
-        <Text bold color={lifeColor(s.left, s.ttl, warnMs(s.ttl))}>{s.left > 0 ? `⏱ ${fmtClock(s.left)}` : '⏱ 0:00'}</Text>
+      {clock ? (
+        <Box flexShrink={0}>
+          <Text bold color={lifeColor(s.left, s.ttl, warnMs(s.ttl))}>{clock}</Text>
+        </Box>
       ) : null}
-      <Text dimColor wrap="truncate-end">{`${s.ttl} · ${s.advice}`}</Text>
+      <Text dimColor wrap="truncate-end">{shown}</Text>
     </Box>
   )
 }
@@ -560,6 +589,9 @@ export const register: Register = (on, options) => {
     await tick($)
     timer?.cancel()
     timer = $.clock.every(1_000, () => tick($))
+    isScrolling = false
+    scrollTimer?.cancel()
+    scrollTimer = undefined
     return result
   })
 
@@ -611,6 +643,7 @@ export const register: Register = (on, options) => {
   // Dải phía trên ô prompt trên desktop (terminal đã có bản đầy đủ ở footer).
   // Dải chỉ có một: giữ phần các plugin khác vẽ (next) bên dưới dòng của mình; nhường khi có survey hoặc pane đang mở
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    isScrolling = false
     if (!opts.band || e.surface !== 'desktop' || e.props.hasSurvey || isPaneOpen) return next(e)
     const mine = await drawBand($, e, e.props.bodyColumns)
     if (!mine) return next(e)

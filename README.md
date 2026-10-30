@@ -10,7 +10,7 @@ Mod cho Claude Code / Claude desktop: theo dõi prompt cache của hội thoại
   ● cache ██████████ 99% read 294k wrote 3.2k new 2 ⏱ 59:40 1h · warm: keep going
   ```
 
-  Hẹp dưới 90 cột thì thanh còn 6 ô, `read / wrote / new` vẫn hiện đủ; thiếu chỗ thì cắt phần lời khuyên cuối dòng. Nhường chỗ khi có survey hoặc khi bảng `/cache-ttl` đang mở.
+  Hẹp dưới 90 cột thì thanh còn 6 ô, `read / wrote / new` vẫn hiện đủ. Đồng hồ luôn một hàng; phần sau đồng hồ dài quá thì thành chữ chạy. Nhường chỗ khi có survey hoặc khi bảng `/cache-ttl` đang mở.
 - **Footer dưới ô prompt**, cạnh model/effort: terminal hiện bản đầy đủ. Desktop đã có dải phía trên nên để nguyên footer của Claude Code; tắt tuỳ chọn `band` thì footer desktop hiện bản gọn `● 59:40 99% r294k w3.2k n2` (ô này khoá ~20 ký tự).
 - **Status line** dạng text khi surface không vẽ footer (VS Code, `claude -p`) hoặc tắt tuỳ chọn `footer`.
 

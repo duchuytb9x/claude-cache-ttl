@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { accountOf, byTurn, decideTtl, missReason, nextToastMark, observeTtl, segments } from '../hooks/cache.ts'
+import { accountOf, byTurn, decideTtl, marquee, missReason, nextToastMark, observeTtl, segments } from '../hooks/cache.ts'
 
 const MIN = 60_000
 const START = Date.parse('2026-10-30T06:00:00Z')
@@ -107,6 +107,19 @@ const footer = ($: any, surface: 'terminal' | 'desktop', modes: string[] = []) =
   $.ui.mount({ plugin: 'promptCacheTtl', surface, component: 'SessionMode', props: { modes } })
 
 describe('cache.ts', () => {
+  test('Should_Marquee_OnlyWhenTextIsTooLong', () => {
+    const nbsp = (t: string) => t.replace(/ /g, ' ')
+    expect(marquee('warm: keep going', 16, 99)).toBe('warm: keep going')
+    expect(marquee('abcdefgh', 4, 0)).toBe('abcd')
+    expect(marquee('abcdefgh', 4, 2)).toBe('cdef')
+    // Nối vòng bằng " · " rồi quay lại đầu
+    expect(marquee('abcdefgh', 4, 6)).toBe(nbsp('gh ·'))
+    expect(marquee('abcdefgh', 4, 11)).toBe('abcd')
+    // Đứng yên trong lúc pause, rồi mới trượt
+    expect(marquee('abcdefgh', 4, 3, 8)).toBe('abcd')
+    expect(marquee('abcdefgh', 4, 10, 8)).toBe('cdef')
+  })
+
   test('Should_DecideTtl_InClaudeCodeOrder', () => {
     expect(decideTtl({ force5m: '1', enable1h: '1' }).ttl).toBe('5m')
     expect(decideTtl({ ttlVar: '1h', force5m: '0' }).ttl).toBe('1h')
@@ -432,9 +445,28 @@ describe('promptCacheTtl', () => {
     await step($)
     await w.clock.set(START + 60 * MIN + 1000)
     await w.clock.advance(1000)
-    const ui = await band($)
+    const ui = await band($, { ...BAND, bodyColumns: 200 })
     expect(await texts(ui)).toContain('1h · expired: the next message rewrites 151k tokens. /compact first, or /clear if the task is done')
     await ui.unmount()
+  })
+
+  test('Should_KeepClockOnOneRow_AndScrollTail_WhenTooLong', async ($, on) => {
+    const w = world(on, { usages: [BIG] })
+    await start($)
+    await step($)
+    const narrow = { ...BAND, bodyColumns: 60 }
+    const tailOf = async (ui: any) => (await texts(ui)).find(t => t.includes(' '))
+    const first = await band($, narrow)
+    // Đồng hồ nằm trong Box không co, không xuống hàng giữa ⏱ và số
+    expect((await first.findAll({ type: 'Box' })).filter((b: any) => b.props?.flexShrink === 0).length).toBe(2)
+    expect(await colorOf(first, '⏱ 1:00:00')).toBe('green')
+    const before = await tailOf(first)
+    expect([...(before ?? '')].length).toBe(10)
+    await first.unmount()
+    await w.clock.advance(5000)
+    const later = await band($, narrow)
+    expect(await tailOf(later)).not.toBe(before)
+    await later.unmount()
   })
 
   test('Should_OpenPane_WithPerTurnTable', async ($, on) => {
