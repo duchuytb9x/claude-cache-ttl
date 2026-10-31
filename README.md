@@ -70,18 +70,18 @@ claude plugin test .
 Terminal (shell):
 
 ```bash
-claude plugin install promptCacheTtl --marketplace http://192.168.5.251/huypd/claude-cache-ttl.git
+claude plugin install promptCacheTtl --marketplace https://github.com/duchuytb9x/claude-cache-ttl.git
 ```
 
 Trong một phiên Claude Code ở terminal:
 
 ```
-/plugin install promptCacheTtl --marketplace http://192.168.5.251/huypd/claude-cache-ttl.git
+/plugin install promptCacheTtl --marketplace https://github.com/duchuytb9x/claude-cache-ttl.git
 ```
 
-Claude desktop (Code tab): bấm **+** cạnh ô prompt → **Plugins** → **Add marketplace**, dán `http://192.168.5.251/huypd/claude-cache-ttl.git` → **Add plugin** → chọn `promptCacheTtl`.
+Claude desktop (Code tab): bấm **+** cạnh ô prompt → **Plugins** → **Add marketplace**, dán `https://github.com/duchuytb9x/claude-cache-ttl.git` → **Add plugin** → chọn `promptCacheTtl`.
 
-Yêu cầu: máy phải clone được repo này (có quyền đọc và git credential cho `192.168.5.251`).
+Repo public nên không cần tài khoản hay credential GitHub, máy chỉ cần có `git`.
 
 ## Cập nhật
 
